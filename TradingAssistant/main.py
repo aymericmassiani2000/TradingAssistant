@@ -1,6 +1,10 @@
 from scraper import get_all_prices
 from emailer import send_email_alert
 import json, os
+from flask import Flask
+import threading
+
+app = Flask(__name__)
 
 DATA_FILE = "data.json"
 ALERT_THRESHOLD = 0.50
@@ -18,7 +22,8 @@ def save_data(data):
 def percent_change(old, new):
     return (new - old) / old if old else 0
 
-def main():
+def run_trading_bot():
+    print("Running Trading Assistant price tracker...")
     old_data = load_data()
     new_data = get_all_prices()
     alerts = []
@@ -33,8 +38,12 @@ def main():
 
     if alerts:
         send_email_alert(alerts)
-
     save_data(new_data)
 
+@app.route('/')
+def trigger():
+    threading.Thread(target=run_trading_bot).start()
+    return "Trading Assistant triggered successfully."
+
 if __name__ == "__main__":
-    main()
+    app.run(host='0.0.0.0', port=8080)
